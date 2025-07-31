@@ -34,6 +34,9 @@ type Regex struct {
 type Config struct {
 	ServerPort      string `mapstructure:"SERVER_PORT" validate:"required"`
 	PingIntervalSec int    `mapstructure:"PING_INTERVAL_SEC" validate:"required"`
+	PingTimeoutSec  int    `mapstructure:"PING_TIMEOUT_SEC" validate:"required"`
+	PongWaitSec     int    `mapstructure:"PONG_WAIT_SEC" validate:"required"`
+	MaxMessageSize  int64  `mapstructure:"MAX_MESSAGE_SIZE" validate:"required"`
 }
 
 func NewConfig() (*Config, error) {

@@ -6,6 +6,6 @@ import (
 )
 
 func SetupWebSocketRoute(e *echo.Echo, svc *websocket.WebSocket) {
-	websocketRoute := e.Group("/data/ws")
-	websocketRoute.GET("/", svc.WebsocketHandler)
+	webSocketRoute := e.Group("/ws")
+	webSocketRoute.GET("/", svc.WebSocketHandler)
 }

@@ -15,3 +15,7 @@ var upgrader = websocket.Upgrader{
 		return true
 	},
 }
+
+func IsClosedNormally(err error) bool {
+	return websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway)
+}
