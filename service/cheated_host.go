@@ -11,7 +11,6 @@ import (
 type CheatedHost struct {
 	chances       int
 	WordList      []string
-	config        *config.Config
 	wordLookupSet map[string]map[rune]struct{} // Example: {"APPLE": {"A", "P", "L", "E"}}
 }
 
@@ -26,7 +25,6 @@ func NewCheatedHostGame(config *config.Config) *CheatedHost {
 		WordList:      config.WordleWordList,
 		wordLookupSet: wordLookupSet,
 		chances:       config.WordleMaxChances,
-		config:        config,
 	}
 }
 
