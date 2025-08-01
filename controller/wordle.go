@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -50,11 +49,6 @@ func (wc *WordleController) Handle(conn *w.Conn) Controller {
 		}
 
 		if finished {
-			gameoverMsg := fmt.Sprintf("Game over! The correct answer is %s", wc.handler.Answer)
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(gameoverMsg)); err != nil {
-				log.Println("write error:", err)
-				return nil
-			}
 			return NewGameLoungeController(wc.config)
 		}
 	}
