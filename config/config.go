@@ -37,6 +37,9 @@ type Config struct {
 	PingTimeoutSec  int    `mapstructure:"PING_TIMEOUT_SEC" validate:"required"`
 	PongWaitSec     int    `mapstructure:"PONG_WAIT_SEC" validate:"required"`
 	MaxMessageSize  int64  `mapstructure:"MAX_MESSAGE_SIZE" validate:"required"`
+
+	WordleWordList   []string `mapstructure:"WORDLE_WORD_LIST" validate:"required,min=1,dive,uppercase"`
+	WordleMaxChances int      `mapstructure:"WORDLE_MAX_CHANCES" validate:"required"`
 }
 
 func NewConfig() (*Config, error) {
@@ -94,6 +97,8 @@ func bindEnvs(iface interface{}, parts ...string) {
 func Validate(data interface{}) error {
 	v := validator.New()
 
+	v.RegisterValidation("uppercase", isUppercase)
+
 	err := v.Struct(data)
 	if err == nil {
 		return nil
@@ -110,4 +115,8 @@ func Validate(data interface{}) error {
 		accumulatedErrors.ValidationTags = append(accumulatedErrors.ValidationTags, validationErr.Tag())
 	}
 	return accumulatedErrors
+}
+
+func isUppercase(fl validator.FieldLevel) bool {
+	return fl.Field().String() == strings.ToUpper(fl.Field().String())
 }
