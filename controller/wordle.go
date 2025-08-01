@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gorilla/websocket"
@@ -11,7 +12,7 @@ import (
 
 type WordleController struct {
 	config  *config.Config
-	handler service.Handler
+	handler *service.Wordle
 }
 
 func NewWordleController(cfg *config.Config) *WordleController {
@@ -25,8 +26,6 @@ func NewWordleController(cfg *config.Config) *WordleController {
 func (wc *WordleController) Handle(conn *w.Conn) Controller {
 	rules := "Welcome to Wordle!\n" +
 		"You have 6 tries to guess the 5-letter word.\n" +
-		"- Each guess must be a valid 5-letter word.\n" +
-		"- After each guess, the color of the tiles will change to show how close your guess was to the word.\n" +
 		"- O: The letter is in the word and in the correct spot.\n" +
 		"- ?: The letter is in the word but in the wrong spot.\n" +
 		"- _: The letter is not in the word in any spot.\n\n" +
@@ -51,7 +50,11 @@ func (wc *WordleController) Handle(conn *w.Conn) Controller {
 		}
 
 		if finished {
-			// Game over, return to the lounge.
+			gameoverMsg := fmt.Sprintf("Game over! The correct answer is %s", wc.handler.Answer)
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(gameoverMsg)); err != nil {
+				log.Println("write error:", err)
+				return nil
+			}
 			return NewGameLoungeController(wc.config)
 		}
 	}
