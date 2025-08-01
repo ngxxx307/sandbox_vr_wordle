@@ -14,6 +14,14 @@ type Wordle struct {
 	config    *config.Config
 }
 
+func PrepareLookupSet(s string) map[rune]struct{} {
+	lookupSet := make(map[rune]struct{}, len(s))
+	for _, r := range s {
+		lookupSet[r] = struct{}{}
+	}
+	return lookupSet
+}
+
 func NewWordleGame(config *config.Config) *Wordle {
 	randomIndex := rand.N(uint(len(config.WordleWordList)))
 	answer := config.WordleWordList[randomIndex]
@@ -26,26 +34,23 @@ func NewWordleGame(config *config.Config) *Wordle {
 	}
 }
 
-func (w *Wordle) Read(msg string) (resp string, next Handler) {
-	resp, finished := w.Guess(msg)
+func (w *Wordle) Read(msg string) (resp string, finished bool) {
+	resp, finished = w.Guess(msg)
 	if finished {
-		// When the game is over, we need to transition back to the default handler.
-		// This assumes you have a way to create a new DefaultHandler.
-		// If NewDefaultHandler requires dependencies, this part will need adjustment.
-		return resp, NewDefaultHandler(w.config)
+		return resp, true
 	}
-	return resp, w
+	return resp, false
 }
 
 func (w *Wordle) Guess(word string) (result string, finished bool) {
 	// Game is already over
 	if w.chances <= 0 {
-		return "GAME_OVER", true
+		return "GAMEOVER", true
 	}
 
 	// Ensure guess is the same length as the answer
 	if len(word) != len(w.answer) {
-		return "INVALID_LENGTH", false
+		return "Invalid Word length!", false
 	}
 
 	w.chances--

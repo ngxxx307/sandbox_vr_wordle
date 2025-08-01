@@ -58,11 +58,11 @@ func (c *Conn) WriteJSON(v interface{}) error {
 	return c.conn.WriteJSON(v)
 }
 
-func (c *Conn) WriteMessage(data string) error {
+func (c *Conn) WriteMessage(messageType int, data []byte) error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-	return c.conn.WriteMessage(websocket.TextMessage, []byte(data))
+	return c.conn.WriteMessage(messageType, data)
 }
 
 func (c *Conn) PingPong() error {
@@ -73,7 +73,6 @@ func (c *Conn) PingPong() error {
 	return nil
 }
 
-func (c *Conn) ReadMessage() (string, error) {
-	_, rawMessage, err := c.conn.ReadMessage()
-	return string(rawMessage), err
+func (c *Conn) ReadMessage() (int, []byte, error) {
+	return c.conn.ReadMessage()
 }
