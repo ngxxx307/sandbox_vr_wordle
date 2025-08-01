@@ -7,8 +7,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
+	"github.com/ngxxx307/sandbox_vr_wordle/controller"
 	"github.com/ngxxx307/sandbox_vr_wordle/routes"
-	"github.com/ngxxx307/sandbox_vr_wordle/websocket"
+	"github.com/ngxxx307/sandbox_vr_wordle/service"
 	"go.uber.org/fx"
 )
 
@@ -16,7 +17,9 @@ func main() {
 	fx.New(
 		fx.Provide(config.NewConfig),
 
-		fx.Provide(websocket.NewWebsocket),
+		fx.Provide(service.NewDefaultHandler),
+
+		fx.Provide(controller.NewWebsocket),
 
 		fx.Provide(NewEchoServer),
 		fx.Invoke(routes.SetupWebSocketRoute),

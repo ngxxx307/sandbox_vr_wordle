@@ -1,12 +1,13 @@
-package websocket
+package controller
 
 import (
 	"log"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
+	"github.com/ngxxx307/sandbox_vr_wordle/service"
+	"github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
 type WebSocket struct {
@@ -14,6 +15,7 @@ type WebSocket struct {
 	pingTimeout    time.Duration
 	pongWait       time.Duration
 	maxMessageSize int64
+	Handler        service.Handler
 }
 
 func NewWebsocket(c *config.Config) *WebSocket {
@@ -22,6 +24,7 @@ func NewWebsocket(c *config.Config) *WebSocket {
 		pingTimeout:    time.Duration(c.PingTimeoutSec) * time.Second,
 		pongWait:       time.Duration(c.PongWaitSec) * time.Second,
 		maxMessageSize: c.MaxMessageSize,
+		Handler:        service.NewDefaultHandler(c), // Set this later with the actual implementation
 	}
 }
 
@@ -30,7 +33,7 @@ func NewWebsocket(c *config.Config) *WebSocket {
 func (ws *WebSocket) WebSocketHandler(c echo.Context) error {
 	// 1. Create the connection using your new constructor.
 	//    This sets up the pong handler and the initial read deadline.
-	conn, err := NewConnection(c, ws.pingInterval, ws.pingTimeout, ws.pongWait, ws.maxMessageSize)
+	conn, err := websocket.NewConnection(c, ws.pingInterval, ws.pingTimeout, ws.pongWait, ws.maxMessageSize)
 	if err != nil {
 		log.Println("Failed to upgrade connection in WebSocketHandler:", err)
 		return err
@@ -65,27 +68,30 @@ func (ws *WebSocket) WebSocketHandler(c echo.Context) error {
 	}()
 	// =======================================================
 
-	// 3. This is the main read loop. It blocks until a message arrives or an error occurs.
-	//    The read deadline is now being successfully extended by the pong handler,
-	//    which is triggered by the pings sent from the goroutine above.
 	for {
-		mt, rawMessage, err := conn.ReadMessage()
-		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseNormalClosure) {
-				log.Printf("WebSocket connection closed abnormally: %v", err)
-			} else {
-				log.Println("WebSocket connection closed normally")
+		if _, ok := ws.Handler.(*service.DefaultHandler); ok {
+			infoMsg := "Welcome! Available games: Wordle, Cheated Wordle, Multiplayer Wordle."
+			if err := conn.WriteMessage(infoMsg); err != nil {
+				log.Println("Failed to send welcome message:", err)
+				return err
 			}
-			break // Exit the loop on any error.
+		}
+		rawMessage, err := conn.ReadMessage()
+		if err != nil {
+			websocket.HandleReadError(err)
+			break
 		}
 
 		log.Printf("Received message: %s", rawMessage)
 
+		resp, nextHandler := ws.Handler.Read(rawMessage)
+
 		// Echo the message back.
-		if err := conn.WriteMessage(mt, rawMessage); err != nil {
+		if err := conn.WriteMessage(resp); err != nil {
 			log.Println("write error:", err)
 			break
 		}
+		ws.Handler = nextHandler
 	}
 
 	return nil
