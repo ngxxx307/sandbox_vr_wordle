@@ -9,20 +9,20 @@ import (
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
-type WordleController struct {
+type CheatedHostController struct {
 	config  *config.Config
-	handler *service.Wordle
+	handler *service.CheatedHost
 }
 
-func NewWordleController(cfg *config.Config) *WordleController {
-	svc := service.NewWordleGame(cfg)
-	return &WordleController{
+func NewCheatedHostController(cfg *config.Config) *CheatedHostController {
+	svc := service.NewCheatedHostGame(cfg)
+	return &CheatedHostController{
 		config:  cfg,
 		handler: svc,
 	}
 }
 
-func (wc *WordleController) Handle(conn *w.Conn) Controller {
+func (wc *CheatedHostController) Handle(conn *w.Conn) Controller {
 	rules := "Welcome to Wordle!\n" +
 		"You have 6 tries to guess the 5-letter word.\n" +
 		"- O: The letter is in the word and in the correct spot.\n" +
