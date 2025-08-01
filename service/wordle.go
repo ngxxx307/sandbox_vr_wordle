@@ -12,7 +12,6 @@ type Wordle struct {
 	chances   int
 	Answer    string
 	lookupSet map[rune]struct{}
-	config    *config.Config
 }
 
 func PrepareLookupSet(s string) map[rune]struct{} {
@@ -31,7 +30,6 @@ func NewWordleGame(config *config.Config) *Wordle {
 		Answer:    answer,
 		chances:   config.WordleMaxChances,
 		lookupSet: PrepareLookupSet(answer),
-		config:    config,
 	}
 }
 

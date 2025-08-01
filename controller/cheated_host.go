@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
+	"github.com/ngxxx307/sandbox_vr_wordle/hub"
 	"github.com/ngxxx307/sandbox_vr_wordle/service"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
@@ -12,13 +13,15 @@ import (
 type CheatedHostController struct {
 	config  *config.Config
 	handler *service.CheatedHost
+	hub     *hub.Hub
 }
 
-func NewCheatedHostController(cfg *config.Config) *CheatedHostController {
+func NewCheatedHostController(cfg *config.Config, hub *hub.Hub) *CheatedHostController {
 	svc := service.NewCheatedHostGame(cfg)
 	return &CheatedHostController{
 		config:  cfg,
 		handler: svc,
+		hub:     hub,
 	}
 }
 
@@ -50,7 +53,7 @@ func (wc *CheatedHostController) Handle(conn *w.Conn) Controller {
 
 		// if finished, relinquish control back to lounge controller
 		if finished {
-			return NewGameLoungeController(wc.config)
+			return NewGameLoungeController(wc.config, wc.hub)
 		}
 	}
 }
