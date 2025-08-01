@@ -1,5 +1,7 @@
 package websocket
 
+// TODO: Revamp the websocket package to be channel-based rather than procedural-based
+
 import (
 	"compress/flate"
 	"sync"
