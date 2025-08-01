@@ -22,7 +22,7 @@ func NewGameLoungeController(cfg *config.Config) *GameLoungeController {
 
 // Handle manages the connection while in the game lounge.
 func (g *GameLoungeController) Handle(conn *w.Conn) Controller {
-	infoMsg := "Welcome! Available games: Wordle, Cheated Wordle, Multiplayer Wordle."
+	infoMsg := "Welcome! Available games: Wordle, Cheated Host Wordle, Multiplayer Wordle."
 	if err := conn.WriteMessage(websocket.TextMessage, []byte(infoMsg)); err != nil {
 		log.Println("Failed to send welcome message:", err)
 		return nil
@@ -41,9 +41,9 @@ func (g *GameLoungeController) Handle(conn *w.Conn) Controller {
 	case "Wordle":
 		resp = "Wordle Game start!"
 		nextController = NewWordleController(g.config)
-	case "Cheated Wordle":
-		resp = "Not available yet! Coming soon..."
-		nextController = g
+	case "Cheated Host Wordle":
+		resp = "Cheated Host Wordle game start!"
+		nextController = NewCheatedHostController(g.config)
 	case "Multiplayer Wordle":
 		resp = "Not available yet! Coming soon..."
 		nextController = g

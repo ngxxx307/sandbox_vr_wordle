@@ -43,15 +43,15 @@ func (w *Wordle) Read(msg string) (resp string, finished bool) {
 	return resp, false
 }
 
-func (w *Wordle) Guess(word string) (result string, finished bool) {
-	word = strings.ToUpper(word)
+func (w *Wordle) Guess(guess string) (result string, finished bool) {
+	guess = strings.ToUpper(guess)
 	// Game is already over
 	if w.chances <= 0 {
 		return "GAMEOVER", true
 	}
 
 	// Ensure guess is the same length as the answer
-	if len(word) != len(w.Answer) {
+	if len(guess) != len(w.Answer) {
 		return "Invalid Word length!", false
 	}
 
@@ -60,7 +60,7 @@ func (w *Wordle) Guess(word string) (result string, finished bool) {
 	resultRunes := make([]rune, len(w.Answer))
 	correct := true
 
-	for i, r := range word {
+	for i, r := range guess {
 		letter := rune(w.Answer[i])
 		if letter == r { // correct letter
 			resultRunes[i] = 'O'
@@ -80,7 +80,8 @@ func (w *Wordle) Guess(word string) (result string, finished bool) {
 
 	// Check if the game is over due to running out of chances
 	if w.chances <= 0 {
-		finished = true
+		gameoverMsg := fmt.Sprintf("%s \nGame over! The correct answer is %s", string(resultRunes), w.Answer)
+		return gameoverMsg, true
 	}
 
 	return string(resultRunes), finished
