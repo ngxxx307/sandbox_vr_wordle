@@ -1,58 +1,37 @@
 package controller
 
 import (
-	"log"
-
 	"github.com/gorilla/websocket"
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
-	"github.com/ngxxx307/sandbox_vr_wordle/hub"
-	"github.com/ngxxx307/sandbox_vr_wordle/service"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
 type MultiplayerWordleController struct {
-	config  *config.Config
-	Handler *service.MultiplayerWordle
-	hub     *hub.Hub
+	config *config.Config
 }
 
-func NewMultiplayerWordleController(cfg *config.Config, hub *hub.Hub) *MultiplayerWordleController {
-	svc := service.NewMultiplayerWordle(cfg)
+func NewMultiplayerWordleController(cfg *config.Config) *MultiplayerWordleController {
 	return &MultiplayerWordleController{
-		config:  cfg,
-		Handler: svc,
-		hub:     hub,
+		config: cfg,
 	}
 }
 
 func (wc *MultiplayerWordleController) Handle(conn *w.Conn) Controller {
-	defer conn.Close()
+	// Don't start pumps here since they're already started in WebSocketHandler
 
-	handler := service.NewMultiplayerWordle(wc.config)
-	wc.hub.Enqueue(handler)
-
-	go func() {
-		for {
-			_, rawMessage, err := conn.ReadMessage()
-			if err != nil {
-				w.HandleReadError(err)
-				close(handler.SendChannel)
-				return
+	for {
+		select {
+		case msg, ok := <-conn.ReadChannel:
+			if !ok {
+				// Channel is closed, exit gracefully
+				return NewGameLoungeController(wc.config)
 			}
-			handler.Read(string(rawMessage))
-		}
-	}()
-
-	for serverMessage := range handler.SendChannel {
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(serverMessage.Message)); err != nil {
-			log.Println("write error:", err)
-			return nil
-		}
-
-		if serverMessage.Finished {
-			return NewGameLoungeController(wc.config, wc.hub)
+			println("msg:", msg.Msg)
+			conn.WriteChannel <- &w.WebSocketMessage{Msg: msg.Msg, MessageType: websocket.TextMessage}
+			if msg.Msg == "quit" {
+				conn.WriteChannel <- &w.WebSocketMessage{Msg: "OKOK", MessageType: websocket.TextMessage}
+				return NewGameLoungeController(wc.config)
+			}
 		}
 	}
-
-	return NewGameLoungeController(wc.config, wc.hub)
 }

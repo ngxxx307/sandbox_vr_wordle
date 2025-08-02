@@ -1,71 +1,52 @@
-package hub
+package main
 
-import (
-	"math/rand/v2"
-	"sync"
+import "github.com/ngxxx307/sandbox_vr_wordle/service"
 
-	"github.com/ngxxx307/sandbox_vr_wordle/config"
-	"github.com/ngxxx307/sandbox_vr_wordle/service"
-)
-
-// Hub manages the client queue and starts new game sessions.
+// Hub maintains the set of active clients and broadcasts messages to the
+// clients.
 type Hub struct {
-	Queue       []*service.MultiplayerWordle
-	QueueLock   sync.Mutex
-	QueueUpdate chan struct{}
-	stop        chan struct{}
-	config      *config.Config
+	Host service.MultiplayerHost
+	// Registered clients.
+	clients map[*service.MultiplayerClinet]bool
 
-	// These are now part of the GameSession, but the hub can generate them.
-	Answer    string
-	lookupSet map[rune]struct{}
+	// Inbound messages from the clients.
+	broadcast chan string
+
+	// Register requests from the clients.
+	register chan *service.MultiplayerClinet
+
+	// Unregister requests from clients.
+	unregister chan *service.MultiplayerClinet
 }
 
-func NewHub(c *config.Config) *Hub {
-	// The hub can still be responsible for picking a word for new games.
-	randomIndex := rand.N(uint(len(c.WordleWordList)))
-	answer := c.WordleWordList[randomIndex]
-
+func newHub() *Hub {
 	return &Hub{
-		config:      c,
-		Answer:      answer,
-		lookupSet:   service.PrepareLookupSet(answer),
-		QueueUpdate: make(chan struct{}, 1),
-		stop:        make(chan struct{}),
+		broadcast:  make(chan string),
+		register:   make(chan *service.MultiplayerClinet),
+		unregister: make(chan *service.MultiplayerClinet),
+		clients:    make(map[*service.MultiplayerClinet]bool),
 	}
 }
 
-// Run starts the hub's main event loop for matchmaking.
-func (h *Hub) Run() {
+func (h *Hub) run() {
 	for {
 		select {
-		case <-h.QueueUpdate:
-			if len(h.Queue) >= 2 {
-				h.QueueLock.Lock()
-				p1 := h.Queue[0]
-				p2 := h.Queue[1]
-				h.Queue = h.Queue[2:]
-				h.QueueLock.Unlock()
-
-				// Create and run a new game session for the matched players.
-				session := NewGameSession(h, p1, p2)
-				go session.Run()
+		case client := <-h.register:
+			h.clients[client] = true
+		case client := <-h.unregister:
+			if _, ok := h.clients[client]; ok {
+				delete(h.clients, client)
+				close(client.Send)
 			}
-		case <-h.stop:
-			return
+		case message := <-h.broadcast:
+			for client := range h.clients {
+				select {
+				case client.Send <- message:
+				default:
+					close(client.Send)
+					delete(h.clients, client)
+				}
+			}
 		}
 	}
-}
-
-// Stop gracefully shuts down the hub.
-func (h *Hub) Stop() {
-	close(h.stop)
-}
-
-// Enqueue adds a client to the matchmaking queue.
-func (h *Hub) Enqueue(c *service.MultiplayerWordle) {
-	h.QueueLock.Lock()
-	h.Queue = append(h.Queue, c)
-	h.QueueUpdate <- struct{}{}
-	h.QueueLock.Unlock()
 }

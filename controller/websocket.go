@@ -6,7 +6,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
-	"github.com/ngxxx307/sandbox_vr_wordle/hub"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
@@ -16,17 +15,15 @@ type WebSocket struct {
 	pongWait       time.Duration
 	maxMessageSize int64
 	config         *config.Config
-	hub            *hub.Hub
 }
 
-func NewWebsocket(c *config.Config, hub *hub.Hub) *WebSocket {
+func NewWebsocket(c *config.Config) *WebSocket {
 	return &WebSocket{
 		pingInterval:   time.Duration(c.PingIntervalSec) * time.Second,
 		pingTimeout:    time.Duration(c.PingTimeoutSec) * time.Second,
 		pongWait:       time.Duration(c.PongWaitSec) * time.Second,
 		maxMessageSize: c.MaxMessageSize,
 		config:         c,
-		hub:            hub,
 	}
 }
 
@@ -39,6 +36,10 @@ func (ws *WebSocket) WebSocketHandler(c echo.Context) error {
 	defer conn.Close()
 
 	log.Println("WebSocket Connection Established")
+
+	// Start the read and write pump goroutines
+	go conn.ReadPump()
+	go conn.WritePump()
 
 	go func() {
 		ticker := time.NewTicker(conn.PingPeriod)
@@ -59,7 +60,7 @@ func (ws *WebSocket) WebSocketHandler(c echo.Context) error {
 	}()
 
 	// Start with the GameLounge controller
-	var currentController Controller = NewGameLoungeController(ws.config, ws.hub)
+	var currentController Controller = NewGameLoungeController(ws.config)
 
 	for currentController != nil {
 		nextController := currentController.Handle(conn)

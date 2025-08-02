@@ -1,11 +1,8 @@
 package controller
 
 import (
-	"log"
-
 	"github.com/gorilla/websocket"
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
-	"github.com/ngxxx307/sandbox_vr_wordle/hub"
 	"github.com/ngxxx307/sandbox_vr_wordle/service"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
@@ -13,15 +10,13 @@ import (
 type CheatedHostController struct {
 	config  *config.Config
 	handler *service.CheatedHost
-	hub     *hub.Hub
 }
 
-func NewCheatedHostController(cfg *config.Config, hub *hub.Hub) *CheatedHostController {
+func NewCheatedHostController(cfg *config.Config) *CheatedHostController {
 	svc := service.NewCheatedHostGame(cfg)
 	return &CheatedHostController{
 		config:  cfg,
 		handler: svc,
-		hub:     hub,
 	}
 }
 
@@ -32,28 +27,21 @@ func (wc *CheatedHostController) Handle(conn *w.Conn) Controller {
 		"- ?: The letter is in the word but in the wrong spot.\n" +
 		"- _: The letter is not in the word in any spot.\n\n" +
 		"Good luck!"
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(rules)); err != nil {
-		log.Println("write error:", err)
-		return nil
-	}
+	conn.WriteChannel <- &w.WebSocketMessage{Msg: rules, MessageType: websocket.TextMessage}
 
 	for {
-		_, rawMessage, err := conn.ReadMessage()
-		if err != nil {
-			w.HandleReadError(err)
-			return nil
+		msg, ok := <-conn.ReadChannel
+		if !ok {
+			// Channel is closed, exit gracefully
+			return NewGameLoungeController(wc.config)
 		}
 
-		resp, finished := wc.handler.Read(string(rawMessage))
-
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(resp)); err != nil {
-			log.Println("write error:", err)
-			return nil
-		}
+		resp, finished := wc.handler.Read(msg.Msg)
+		conn.WriteChannel <- &w.WebSocketMessage{Msg: resp, MessageType: websocket.TextMessage}
 
 		// if finished, relinquish control back to lounge controller
 		if finished {
-			return NewGameLoungeController(wc.config, wc.hub)
+			return NewGameLoungeController(wc.config)
 		}
 	}
 }
