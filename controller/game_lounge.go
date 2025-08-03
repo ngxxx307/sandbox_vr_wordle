@@ -2,63 +2,52 @@ package controller
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gorilla/websocket"
-	"github.com/ngxxx307/sandbox_vr_wordle/config"
-	"github.com/ngxxx307/sandbox_vr_wordle/hub"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
 // GameLoungeController is the initial controller that lets users select a game.
 type GameLoungeController struct {
-	config *config.Config
-	hub    *hub.Hub
+	ctx *GameContext
 }
 
-func NewGameLoungeController(cfg *config.Config, hub *hub.Hub) *GameLoungeController {
+func NewGameLoungeController(ctx *GameContext) *GameLoungeController {
 	return &GameLoungeController{
-		config: cfg,
-		hub:    hub,
+		ctx: ctx,
 	}
 }
 
 // Handle manages the connection while in the game lounge.
-func (g *GameLoungeController) Handle(conn *w.Conn) Controller {
+func (c *GameLoungeController) Handle(conn *w.Conn) Controller {
 	infoMsg := "Welcome! Available games: Wordle, Cheated Host Wordle, Multiplayer Wordle."
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(infoMsg)); err != nil {
-		log.Println("Failed to send welcome message:", err)
+	conn.WriteChannel <- &w.WebSocketMessage{Msg: infoMsg, MessageType: websocket.TextMessage}
+
+	msg, ok := <-conn.ReadChannel
+	if !ok {
+		// Channel is closed, exit gracefully
 		return nil
 	}
 
-	_, rawMessage, err := conn.ReadMessage()
-	if err != nil {
-		w.HandleReadError(err)
-		return nil
-	}
-	var req = string(rawMessage)
 	var resp string
 	var nextController Controller
 
-	switch req {
+	switch msg.Msg {
 	case "Wordle":
 		resp = "Wordle Game start!"
-		nextController = NewWordleController(g.config, g.hub)
+		nextController = NewWordleController(c.ctx)
 	case "Cheated Host Wordle":
 		resp = "Cheated Host Wordle game start!"
-		nextController = NewCheatedHostController(g.config, g.hub)
+		nextController = NewCheatedHostController(c.ctx)
 	case "Multiplayer Wordle":
 		resp = "Entering multiplayer queue..."
-		nextController = NewMultiplayerWordleController(g.config, g.hub)
+		nextController = NewMultiplayerWordleController(c.ctx)
 	default:
-		resp = fmt.Sprintf("Error game type: %s", req)
-		nextController = g
+		resp = fmt.Sprintf("Error game type: %s", msg.Msg)
+		nextController = c
 	}
 
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(resp)); err != nil {
-		log.Println("write error:", err)
-		return nil
-	}
+	conn.WriteChannel <- &w.WebSocketMessage{Msg: resp, MessageType: websocket.TextMessage}
 	return nextController
 
 }

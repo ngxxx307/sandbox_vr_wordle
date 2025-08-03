@@ -28,15 +28,15 @@ func NewCheatedHostGame(config *config.Config) *CheatedHost {
 	}
 }
 
-func (w *CheatedHost) Read(msg string) (resp string, finished bool) {
-	resp, finished = w.Guess(msg)
+func (h *CheatedHost) Read(msg string) (resp string, finished bool) {
+	resp, finished = h.Guess(msg)
 	if finished {
 		return resp, true
 	}
 	return resp, false
 }
 
-func (w *CheatedHost) Guess(guess string) (result string, finished bool) {
+func (h *CheatedHost) Guess(guess string) (result string, finished bool) {
 	guess = strings.ToUpper(guess)
 
 	groups := make(map[string][]string)
@@ -46,10 +46,10 @@ func (w *CheatedHost) Guess(guess string) (result string, finished bool) {
 		return "Invalid Word length!", false
 	}
 
-	w.chances--
+	h.chances--
 
 	// Caculate Hit and Presents
-	for _, word := range w.WordList {
+	for _, word := range h.WordList {
 		resultRunes := make([]rune, len(guess))
 
 		for i, r := range guess {
@@ -59,7 +59,7 @@ func (w *CheatedHost) Guess(guess string) (result string, finished bool) {
 
 				continue
 			}
-			if _, present := w.wordLookupSet[word][r]; present {
+			if _, present := h.wordLookupSet[word][r]; present {
 				resultRunes[i] = '?'
 			} else {
 				resultRunes[i] = '_'
@@ -99,16 +99,16 @@ func (w *CheatedHost) Guess(guess string) (result string, finished bool) {
 			largestGroup = group
 		}
 	}
-	w.WordList = largestGroup
+	h.WordList = largestGroup
 
 	if worstPattern == "OOOOO" {
-		return fmt.Sprintf("bingo! the correct answer is %s", w.WordList[0]), true
+		return fmt.Sprintf("bingo! the correct answer is %s", h.WordList[0]), true
 	}
 
 	// Check if the game is over due to running out of chances
-	if w.chances <= 0 {
+	if h.chances <= 0 {
 		return "GAME OVER!!!", true
 	}
 
-	return fmt.Sprintf("%s: %s", worstPattern, largestGroup), finished
+	return worstPattern, finished
 }
