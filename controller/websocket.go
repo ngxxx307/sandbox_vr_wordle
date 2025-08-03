@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
+	"github.com/ngxxx307/sandbox_vr_wordle/matchMaker"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
@@ -15,15 +16,17 @@ type WebSocket struct {
 	pongWait       time.Duration
 	maxMessageSize int64
 	config         *config.Config
+	matchMaker     *matchMaker.MatchMaker
 }
 
-func NewWebsocket(c *config.Config) *WebSocket {
+func NewWebsocket(c *config.Config, matcher *matchMaker.MatchMaker) *WebSocket {
 	return &WebSocket{
 		pingInterval:   time.Duration(c.PingIntervalSec) * time.Second,
 		pingTimeout:    time.Duration(c.PingTimeoutSec) * time.Second,
 		pongWait:       time.Duration(c.PongWaitSec) * time.Second,
 		maxMessageSize: c.MaxMessageSize,
 		config:         c,
+		matchMaker:     matcher,
 	}
 }
 
@@ -59,8 +62,11 @@ func (ws *WebSocket) WebSocketHandler(c echo.Context) error {
 		}
 	}()
 
+	// Create a type-safe game context
+	gameCtx := NewGameContext(c, ws.config, ws.matchMaker)
+
 	// Start with the GameLounge controller
-	var currentController Controller = NewGameLoungeController(ws.config)
+	var currentController Controller = NewGameLoungeController(gameCtx)
 
 	for currentController != nil {
 		nextController := currentController.Handle(conn)

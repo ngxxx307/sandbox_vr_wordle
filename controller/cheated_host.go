@@ -2,20 +2,19 @@ package controller
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/ngxxx307/sandbox_vr_wordle/config"
 	"github.com/ngxxx307/sandbox_vr_wordle/service"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
 type CheatedHostController struct {
-	config  *config.Config
+	ctx     *GameContext
 	handler *service.CheatedHost
 }
 
-func NewCheatedHostController(cfg *config.Config) *CheatedHostController {
-	svc := service.NewCheatedHostGame(cfg)
+func NewCheatedHostController(ctx *GameContext) *CheatedHostController {
+	svc := service.NewCheatedHostGame(ctx.Config)
 	return &CheatedHostController{
-		config:  cfg,
+		ctx:     ctx,
 		handler: svc,
 	}
 }
@@ -33,7 +32,7 @@ func (wc *CheatedHostController) Handle(conn *w.Conn) Controller {
 		msg, ok := <-conn.ReadChannel
 		if !ok {
 			// Channel is closed, exit gracefully
-			return NewGameLoungeController(wc.config)
+			return NewGameLoungeController(wc.ctx)
 		}
 
 		resp, finished := wc.handler.Read(msg.Msg)
@@ -41,7 +40,7 @@ func (wc *CheatedHostController) Handle(conn *w.Conn) Controller {
 
 		// if finished, relinquish control back to lounge controller
 		if finished {
-			return NewGameLoungeController(wc.config)
+			return NewGameLoungeController(wc.ctx)
 		}
 	}
 }

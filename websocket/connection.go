@@ -85,6 +85,12 @@ func (c *Conn) Close() error {
 	return c.conn.Close()
 }
 
+func (c *Conn) IsClosed() bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.closed
+}
+
 func (c *Conn) PingPong() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()

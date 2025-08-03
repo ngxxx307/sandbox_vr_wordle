@@ -2,21 +2,20 @@ package controller
 
 import (
 	"github.com/gorilla/websocket"
-	"github.com/ngxxx307/sandbox_vr_wordle/config"
 	"github.com/ngxxx307/sandbox_vr_wordle/service"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
 type WordleController struct {
-	config  *config.Config
+	ctx     *GameContext
 	handler *service.Wordle
 }
 
-func NewWordleController(cfg *config.Config) *WordleController {
-	svc := service.NewWordleGame(cfg)
+func NewWordleController(ctx *GameContext) *WordleController {
+	svc := service.NewWordleGame(ctx.Config)
 	return &WordleController{
-		config:  cfg,
 		handler: svc,
+		ctx:     ctx,
 	}
 }
 
@@ -41,7 +40,7 @@ func (wc *WordleController) Handle(conn *w.Conn) Controller {
 
 		// if finished, relinquish control back to lounge controller
 		if finished {
-			return NewGameLoungeController(wc.config)
+			return NewGameLoungeController(wc.ctx)
 		}
 	}
 }

@@ -4,18 +4,17 @@ import (
 	"fmt"
 
 	"github.com/gorilla/websocket"
-	"github.com/ngxxx307/sandbox_vr_wordle/config"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
 )
 
 // GameLoungeController is the initial controller that lets users select a game.
 type GameLoungeController struct {
-	config *config.Config
+	ctx *GameContext
 }
 
-func NewGameLoungeController(cfg *config.Config) *GameLoungeController {
+func NewGameLoungeController(ctx *GameContext) *GameLoungeController {
 	return &GameLoungeController{
-		config: cfg,
+		ctx: ctx,
 	}
 }
 
@@ -36,13 +35,13 @@ func (g *GameLoungeController) Handle(conn *w.Conn) Controller {
 	switch msg.Msg {
 	case "Wordle":
 		resp = "Wordle Game start!"
-		nextController = NewWordleController(g.config)
+		nextController = NewWordleController(g.ctx)
 	case "Cheated Host Wordle":
 		resp = "Cheated Host Wordle game start!"
-		nextController = NewCheatedHostController(g.config)
+		nextController = NewCheatedHostController(g.ctx)
 	case "Multiplayer Wordle":
 		resp = "Entering multiplayer queue..."
-		nextController = NewMultiplayerWordleController(g.config)
+		nextController = NewMultiplayerWordleController(g.ctx)
 	default:
 		resp = fmt.Sprintf("Error game type: %s", msg.Msg)
 		nextController = g
