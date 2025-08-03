@@ -26,6 +26,20 @@ func (wc *MultiplayerWordleController) Handle(conn *w.Conn) Controller {
 		Finish:      make(chan struct{}),
 	}
 
+	rules := fmt.Sprintf(`Welcome to Multiplayer Wordle!
+
+Rules:
+- Each player has to guess a 5-letter word.
+- You have %d chances to guess the word.
+- 'O': Correct letter, correct position.
+- '?': Correct letter, wrong position.
+- '_': Incorrect letter.
+- Players take turns to guess.
+
+Waiting for another player to join...`, wc.ctx.Config.WordleMaxChances)
+
+	conn.WriteChannel <- &w.WebSocketMessage{Msg: rules, MessageType: websocket.TextMessage}
+
 	wc.ctx.MatchMaker.AddPlayer(client)
 	defer wc.ctx.MatchMaker.RemovePlayer(client)
 

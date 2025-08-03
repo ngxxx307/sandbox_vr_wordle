@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+
 	"github.com/gorilla/websocket"
 	"github.com/ngxxx307/sandbox_vr_wordle/service"
 	w "github.com/ngxxx307/sandbox_vr_wordle/websocket"
@@ -20,12 +22,12 @@ func NewWordleController(ctx *GameContext) *WordleController {
 }
 
 func (wc *WordleController) Handle(conn *w.Conn) Controller {
-	rules := "Welcome to Wordle!\n" +
-		"You have 6 tries to guess the 5-letter word.\n" +
-		"- O: The letter is in the word and in the correct spot.\n" +
-		"- ?: The letter is in the word but in the wrong spot.\n" +
-		"- _: The letter is not in the word in any spot.\n\n" +
-		"Good luck!"
+	rules := fmt.Sprintf("Welcome to Wordle!\n"+
+		"You have %d tries to guess the 5-letter word.\n"+
+		"- O: The letter is in the word and in the correct spot.\n"+
+		"- ?: The letter is in the word but in the wrong spot.\n"+
+		"- _: The letter is not in the word in any spot.\n\n"+
+		"Good luck!", wc.ctx.Config.WordleMaxChances)
 	conn.WriteChannel <- &w.WebSocketMessage{Msg: rules, MessageType: websocket.TextMessage}
 
 	for {
