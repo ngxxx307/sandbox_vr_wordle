@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"log"
+	"regexp"
 	"sync"
 	"time"
 
@@ -101,6 +102,8 @@ func (c *Conn) PingPong() error {
 	return nil
 }
 
+var validMessageRegex = regexp.MustCompile(`^[a-zA-Z ]+$`)
+
 func (c *Conn) ReadPump() {
 	defer func() {
 		// Only close if not already closed
@@ -117,10 +120,24 @@ func (c *Conn) ReadPump() {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("ReadPump error: %v", err)
 			}
+			close(c.ReadChannel)
 			return
 		}
 
 		message = bytes.TrimSpace(bytes.Replace(message, []byte{'\n'}, []byte{' '}, -1))
+
+		if len(message) == 0 {
+			continue
+		}
+
+		if !validMessageRegex.Match(message) {
+			select {
+			case c.WriteChannel <- &WebSocketMessage{Msg: "Invalid input: Please use only letters and spaces.", MessageType: websocket.TextMessage}:
+			default:
+				// Channel is likely closed or full, can't send feedback
+			}
+			continue // Ignore the invalid message
+		}
 
 		// Try to send message, but return if channel is closed
 		select {
