@@ -4,16 +4,6 @@ This project is a backend server for a Wordle-like game, built with Go. It featu
 
 The architecture is designed to be robust and scalable, using modern Go practices.
 
-## Features
-
-*   **State Machine Architecture**: The server uses a state machine pattern (`controller.Controller` interface) to manage the user's session, transitioning seamlessly between states like a "Game Lounge" and a "Multiplayer Game".
-*   **Real-time Multiplayer**:
-    *   A central `Hub` manages matchmaking, placing players into a queue.
-    *   When two players are matched, a dedicated `GameSession` is created to manage their game state independently from other sessions.
-    *   Communication is fully asynchronous using a channel-based "read pump/write pump" pattern for each WebSocket connection.
-*   **Dependency Injection**: Leverages Uber's `fx` framework for clean dependency injection and graceful application lifecycle management (`OnStart`, `OnStop` hooks).
-*   **Configuration Management**: Uses Viper to load configuration from environment variables, with a sample `.env` file for easy setup.
-
 ## Tech Stack
 
 *   **Language**: Go
@@ -23,16 +13,36 @@ The architecture is designed to be robust and scalable, using modern Go practice
 *   **Configuration**: [Viper](https://github.com/spf13/viper)
 *   **Environment Variables**: [GoDotEnv](https://github.com/joho/godotenv)
 
+## Game Mode
+
+*   **Single-Player Wordle**: Classic Wordle gameplay where players guess a 5-letter word within a limited number of attempts.
+*   **Cheated Host Mode**: Single-player mode with the answer revealed to the host, useful for testing and debugging.
+*   **Multiplayer Wordle**: Real-time, turn-based two-player mode where players compete to guess the same word, taking alternate turns.
+
+## Core Concept
+
+**Controller**: Handles WebSocket communication and user session flow. Controllers manage state transitions (e.g., GameLounge → Wordle), process user input from WebSocket connections, and coordinate between different game modes.
+
+**Service**: Contains pure business logic for game mechanics. Services handle core Wordle gameplay (word validation, scoring, game rules) without any knowledge of WebSocket connections or user sessions.
+
+**Match**: Manages individual multiplayer game sessions, coordinating communication between players and the game host.
+
+**MatchMaker**: Contains the multiplayer game matching logic, queueing players and creating matches when sufficient players are available.
+
+**WebSocket**: Contains WebSocket utility functions for connection management, message handling, and communication protocols.
+
 ## Project Structure
 
 ```
 .
 ├── config/         # Configuration loading (Viper) and struct definition.
 ├── controller/     # Handles WebSocket state transitions (e.g., GameLounge -> Multiplayer).
-├── hub/            # Manages matchmaking (Hub) and individual game logic (GameSession).
+├── env/            # Directory for environment files (e.g., .env).
 ├── http/           # Main application entrypoint, fx setup, and Echo server lifecycle.
+├── match/            # Manages individual game sessions/matches.
+├── matchMaker/     # Handles matchmaking logic, queueing players for multiplayer games.
 ├── routes/         # Defines API routes and registers handlers.
-├── service/        # Core game services and data structures (e.g., MultiplayerWordle service).
+├── service/        # Core game services and data structures (e.g., Wordle game logic).
 └── websocket/      # Low-level WebSocket connection wrapper and message pump logic.
 ```
 
@@ -65,17 +75,17 @@ The architecture is designed to be robust and scalable, using modern Go practice
 
 ### How to Play
 
-1.  You will need two separate WebSocket clients to test the multiplayer functionality. You can use a tool like the [Simple WebSocket Client](https://chrome.google.com/webstore/detail/simple-websocket-client/pfdhoblngboilpfeibdedpjgfnlcodoo) extension for Chrome, or any other client.
-
-2.  **Connect both clients** to the server at:
+1.  **Connect to the server** using a WebSocket client (e.g. postman)  at:
     `ws://localhost:8080/ws`
 
-3.  In the first client, send the message `multiplayer`. You will receive a "Waiting for another player..." message.
+2.  **Choose a game mode.** Upon connecting, you'll be in the game lounge. Send one of the following messages to start a game:
+    *   `Wordle`: Start a standard single-player game.
+    *   `Cheated Host Wordle`: Start a single-player game where the answer is revealed to the host (useful for testing).
+    *   `Multiplayer Wordle`: Enter the queue for a two-player match.
 
-4.  In the second client, send the message `multiplayer`. The game will start, and both clients will receive the game rules.
+3.  **For Multiplayer Games:**
+    *   Connect a second client to the same address (`ws://localhost:8080/ws`).
+    *   From the second client, also send the `multiplayer` message.
+    *   Once both players have joined, the match will begin automatically, and both clients will receive the game rules.
 
-5.  Follow the turn-based instructions to play the game.
-
-## ⚠️ Limitations
-
-> **Task 4 (Multiplayer)** is only partially finished due to time limit pressure.
+4.  **Follow the on-screen instructions** to play.
