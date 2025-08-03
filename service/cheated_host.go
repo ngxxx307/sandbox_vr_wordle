@@ -110,5 +110,5 @@ func (w *CheatedHost) Guess(guess string) (result string, finished bool) {
 		return "GAME OVER!!!", true
 	}
 
-	return fmt.Sprintf("%s: %s", worstPattern, largestGroup), finished
+	return worstPattern, finished
 }
