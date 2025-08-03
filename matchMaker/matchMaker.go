@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ngxxx307/sandbox_vr_wordle/config"
-	match "github.com/ngxxx307/sandbox_vr_wordle/hub"
+	"github.com/ngxxx307/sandbox_vr_wordle/match"
 	"github.com/ngxxx307/sandbox_vr_wordle/service"
 )
 
