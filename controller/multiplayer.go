@@ -17,7 +17,7 @@ func NewMultiplayerWordleController(ctx *GameContext) *MultiplayerWordleControll
 	return &MultiplayerWordleController{ctx: ctx}
 }
 
-func (wc *MultiplayerWordleController) Handle(conn *w.Conn) Controller {
+func (c *MultiplayerWordleController) Handle(conn *w.Conn) Controller {
 	client := &service.MultiplayerClient{
 		Conn:        conn,
 		Read:        make(chan string),
@@ -36,12 +36,12 @@ Rules:
 - '_': Incorrect letter.
 - Players take turns to guess.
 
-Waiting for another player to join...`, wc.ctx.Config.WordleMaxChances)
+Waiting for another player to join...`, c.ctx.Config.WordleMaxChances)
 
 	conn.WriteChannel <- &w.WebSocketMessage{Msg: rules, MessageType: websocket.TextMessage}
 
-	wc.ctx.MatchMaker.AddPlayer(client)
-	defer wc.ctx.MatchMaker.RemovePlayer(client)
+	c.ctx.MatchMaker.AddPlayer(client)
+	defer c.ctx.MatchMaker.RemovePlayer(client)
 
 	var wg sync.WaitGroup
 	done := make(chan struct{})
@@ -97,5 +97,5 @@ Waiting for another player to join...`, wc.ctx.Config.WordleMaxChances)
 	}()
 
 	wg.Wait() // Wait for both goroutines to finish
-	return NewGameLoungeController(wc.ctx)
+	return NewGameLoungeController(c.ctx)
 }

@@ -33,39 +33,39 @@ func NewWordleGame(config *config.Config) *Wordle {
 	}
 }
 
-func (w *Wordle) Read(msg string) (resp string, finished bool) {
-	resp, finished = w.Guess(msg)
+func (h *Wordle) Read(msg string) (resp string, finished bool) {
+	resp, finished = h.Guess(msg)
 	if finished {
 		return resp, true
 	}
 	return resp, false
 }
 
-func (w *Wordle) Guess(guess string) (result string, finished bool) {
+func (h *Wordle) Guess(guess string) (result string, finished bool) {
 	guess = strings.ToUpper(guess)
 	// Game is already over
-	if w.chances <= 0 {
+	if h.chances <= 0 {
 		return "GAMEOVER", true
 	}
 
 	// Ensure guess is the same length as the answer
-	if len(guess) != len(w.Answer) {
+	if len(guess) != len(h.Answer) {
 		return "Invalid Word length!", false
 	}
 
-	w.chances--
+	h.chances--
 
-	resultRunes := make([]rune, len(w.Answer))
+	resultRunes := make([]rune, len(h.Answer))
 	correct := true
 
 	for i, r := range guess {
-		letter := rune(w.Answer[i])
+		letter := rune(h.Answer[i])
 		if letter == r { // correct letter
 			resultRunes[i] = 'O'
 			continue
 		}
 		correct = false // If answer is correct, will not run this line
-		if _, present := w.lookupSet[r]; present {
+		if _, present := h.lookupSet[r]; present {
 			resultRunes[i] = '?'
 		} else {
 			resultRunes[i] = '_'
@@ -73,12 +73,12 @@ func (w *Wordle) Guess(guess string) (result string, finished bool) {
 	}
 
 	if correct {
-		return fmt.Sprintf("bingo! the correct answer is %s", w.Answer), true
+		return fmt.Sprintf("bingo! the correct answer is %s", h.Answer), true
 	}
 
 	// Check if the game is over due to running out of chances
-	if w.chances <= 0 {
-		gameoverMsg := fmt.Sprintf("%s \nGame over! The correct answer is %s", string(resultRunes), w.Answer)
+	if h.chances <= 0 {
+		gameoverMsg := fmt.Sprintf("%s \nGame over! The correct answer is %s", string(resultRunes), h.Answer)
 		return gameoverMsg, true
 	}
 

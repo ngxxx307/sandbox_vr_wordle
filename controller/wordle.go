@@ -21,13 +21,13 @@ func NewWordleController(ctx *GameContext) *WordleController {
 	}
 }
 
-func (wc *WordleController) Handle(conn *w.Conn) Controller {
+func (c *WordleController) Handle(conn *w.Conn) Controller {
 	rules := fmt.Sprintf("Welcome to Wordle!\n"+
 		"You have %d tries to guess the 5-letter word.\n"+
 		"- O: The letter is in the word and in the correct spot.\n"+
 		"- ?: The letter is in the word but in the wrong spot.\n"+
 		"- _: The letter is not in the word in any spot.\n\n"+
-		"Good luck!", wc.ctx.Config.WordleMaxChances)
+		"Good luck!", c.ctx.Config.WordleMaxChances)
 	conn.WriteChannel <- &w.WebSocketMessage{Msg: rules, MessageType: websocket.TextMessage}
 
 	for {
@@ -37,12 +37,12 @@ func (wc *WordleController) Handle(conn *w.Conn) Controller {
 			return nil
 		}
 
-		resp, finished := wc.handler.Read(msg.Msg)
+		resp, finished := c.handler.Read(msg.Msg)
 		conn.WriteChannel <- &w.WebSocketMessage{Msg: resp, MessageType: websocket.TextMessage}
 
 		// if finished, relinquish control back to lounge controller
 		if finished {
-			return NewGameLoungeController(wc.ctx)
+			return NewGameLoungeController(c.ctx)
 		}
 	}
 }
